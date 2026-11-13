@@ -1,0 +1,8 @@
+[
+  { "id": "mads", "name": "Mads Brügger", "email": "mads@frihedsbrevet.dk", "password": "editor123", "role": "editor" },
+  { "id": "mia", "name": "Mia Skovby", "email": "mia@frihedsbrevet.dk", "password": "writer123", "role": "contributor" },
+  { "id": "andreas", "name": "Andreas Munk", "email": "andreas@frihedsbrevet.dk", "password": "writer123", "role": "contributor" },
+  { "id": "frederikke", "name": "Frederikke Ingemann", "email": "frederikke@frihedsbrevet.dk", "password": "writer123", "role": "contributor" },
+  { "id": "flemming", "name": "Flemming Rose", "email": "flemming@frihedsbrevet.dk", "password": "writer123", "role": "contributor" },
+  { "id": "anders", "name": "Anders Ejbye-Ernst", "email": "anders@frihedsbrevet.dk", "password": "writer123", "role": "contributor" }
+]
