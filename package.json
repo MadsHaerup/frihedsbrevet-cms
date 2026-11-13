@@ -1,0 +1,28 @@
+{
+  "name": "frihedsbrevet-editorial-tracker",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.8",
+    "@astrojs/netlify": "^8.2.13",
+    "@astrojs/node": "^11.1.12",
+    "@netlify/blobs": "^11.1.9",
+    "@netlify/cache": "^4.2.1",
+    "@netlify/functions": "^6.1.1",
+    "@phosphor-icons/core": "^2.1.1",
+    "astro": "^7.4.11",
+    "yaml": "^2.9.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "happy-dom": "^21.0.4",
+    "vitest": "^4.1.12"
+  }
+}
