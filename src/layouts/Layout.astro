@@ -1,0 +1,54 @@
+---
+import '../styles/index.css';
+import { ClientRouter, fade } from 'astro:transitions';
+import Logo from '../components/Logo.astro';
+import { LOCALES, messages, switchLocalePath, url, useT } from '../i18n';
+import { initials } from '../lib/format';
+
+interface Props { title: string; bare?: boolean }
+const { title, bare = false } = Astro.props;
+const user = Astro.locals.user;
+const lang = Astro.locals.lang;
+const t = useT(lang);
+const path = Astro.url.pathname;
+// Strings the client script (toolbar, editor) needs
+const client = JSON.stringify(messages[lang]);
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" />
+    <title>{title} · Frihedsbrevet</title>
+    <ClientRouter />
+    {LOCALES.map((l) => <link rel="alternate" hreflang={l} href={switchLocalePath(path, l)} />)}
+  </head>
+  <body>
+    {!bare && user && (
+      <header class="nav" transition:name="nav" transition:animate="none">
+        <div class="wrap">
+          <a class="brand" href={url(lang, 'dashboard')} data-astro-prefetch><Logo size={20} />Frihedsbrevet</a>
+          <nav class="links">
+            <a href={url(lang, 'dashboard')} aria-current={path.includes('/dashboard') || path.includes('/content') ? 'page' : undefined}>{t('nav.content')}</a>
+          </nav>
+          <div class="langs" role="group" aria-label={t('lang.label')}>
+            {LOCALES.map((l) => <a href={switchLocalePath(path, l) + Astro.url.search} aria-current={l === lang ? 'true' : undefined} hreflang={l}>{l.toUpperCase()}</a>)}
+          </div>
+          <div class="who">
+            <div><div>{user.name}</div><small>{t(`role.${user.role}`)}</small></div>
+            <span class="avatar">{initials(user.name)}</span>
+            <form method="post" action="/api/logout"><button class="btn link">{t('nav.signOut')}</button></form>
+          </div>
+        </div>
+      </header>
+    )}
+    <div class="page" transition:name="page" transition:animate={fade({ duration: '0.18s' })}>
+      <slot />
+    </div>
+    <script type="application/json" id="i18n" set:html={client}></script>
+    <script>
+      import '../scripts/boot.ts';
+    </script>
+  </body>
+</html>

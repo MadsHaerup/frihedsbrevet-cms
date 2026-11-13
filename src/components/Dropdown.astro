@@ -1,0 +1,34 @@
+---
+import Icon from './Icon.astro';
+
+interface Opt { value: string; label: string; disabled?: boolean }
+interface Props {
+  name?: string;
+  value: string;
+  options: Opt[];
+  /** mode: status pill in the list. field: full-width in the editor. filter: toolbar. */
+  variant?: 'mode' | 'field' | 'filter';
+  /** Color dot, for publication status. */
+  swatch?: boolean;
+  /** Submit the surrounding form when the value changes. */
+  submit?: boolean;
+  label?: string;
+}
+const { name, value, options, variant = 'field', swatch = false, submit = false, label } = Astro.props;
+const current = options.find((o) => o.value === value) ?? options[0];
+---
+<div class:list={['menu', variant]} data-menu data-swatch={swatch ? 'true' : undefined} data-submit={submit ? 'true' : undefined}>
+  <button type="button" class="menu-btn" aria-haspopup="listbox" aria-expanded="false" aria-label={label}>
+    <span class:list={['menu-label', swatch && current && `badge s-${current.value}`]}>{current?.label ?? 'Choose'}</span>
+    <Icon name="caret" size={14} class="chev" />
+  </button>
+  <div class="menu-pop" role="listbox" hidden>
+    {options.map((o) => (
+      <button type="button" role="option" tabindex="-1" data-value={o.value} aria-disabled={o.disabled ? 'true' : undefined} aria-selected={o.value === current?.value ? 'true' : 'false'}>
+        <span class="tick" aria-hidden="true"></span>
+        {swatch ? <span class:list={['badge', `s-${o.value}`]}>{o.label}</span> : <span>{o.label}</span>}
+      </button>
+    ))}
+  </div>
+  {name && <input type="hidden" name={name} value={current?.value ?? ''} />}
+</div>

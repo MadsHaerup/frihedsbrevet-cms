@@ -1,0 +1,106 @@
+/* editor: hero, toolbar, blocks */
+.hero { margin: 0 0 26px; border-radius: 12px; overflow: hidden; background: var(--line); aspect-ratio: 2 / 1; max-height: 340px; }
+.hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cover-row { display: flex; gap: 6px; } .cover-row input { min-width: 0; }
+.file-btn { cursor: pointer; white-space: nowrap; } .file-btn:has(input:focus-visible) { outline: 2px solid var(--ink-3); }
+.fmt > button, .fmt .menu-btn { position: relative; }
+[data-tip]:hover::after, [data-tip]:focus-visible::after {
+  content: attr(data-tip); position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); font: 500 12px/1 var(--sans); padding: 6px 8px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none; z-index: 40;
+}
+.menu.insert { width: auto; }
+.menu.insert .menu-btn { width: auto; height: 32px; padding: 0 6px; gap: 2px; display: inline-flex; align-items: center; border: 0; background: transparent; color: var(--ink); border-radius: 7px; cursor: pointer; }
+.menu.insert .menu-btn:hover, .menu.insert[data-open] .menu-btn { background: var(--line); }
+.menu.insert .menu-pop button { width: 100%; height: auto; justify-content: flex-start; text-align: left; }
+.imagebox:not([hidden]) { flex-wrap: wrap; width: min(560px, 100%); }
+.imagebox input[type="text"], .imagebox input[name="_src"] { flex: 1 1 200px; }
+.box-status { font-size: 12px; flex-basis: 100%; }
+.box-status:empty { display: none; }
+
+.surface figure, .prose figure { margin: 1.2em 0; }
+.surface figure img, .surface .embed iframe { max-width: 100%; display: block; }
+.surface figcaption { font: 13px/1.4 var(--sans); color: var(--ink-3); margin-top: 6px; }
+.surface figcaption:empty::before { content: attr(data-placeholder); }
+.surface .embed { margin: 1.2em 0; overflow: hidden; background: var(--line); }
+.surface .embed iframe { width: 100%; aspect-ratio: 16 / 9; border: 0; }
+.surface .embed-link { padding: 14px 16px; font: 14px var(--sans); word-break: break-all; }
+.surface .is-selected { outline: 2px solid var(--ink); outline-offset: 4px; }
+.surface hr { border: 0; text-align: center; margin: 2em 0; height: 1em; }
+.surface hr::before { content: "* * *"; letter-spacing: 0.6em; color: var(--ink-3); }
+.surface .callout { border: 1px solid var(--line-2); background: var(--bg); border-radius: 10px; padding: 14px 18px 2px; margin: 1.2em 0; font-family: var(--sans); font-size: 15px; }
+.surface blockquote.pull { border: 0; padding: 0 0 0 4px; margin: 1.4em 0; font-size: 28px; line-height: 1.3; font-style: italic; color: var(--ink); }
+.surface pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font: 13px/1.6 ui-monospace, Menlo, monospace; overflow: auto; }
+/* big first letter — ::first-letter only applies to the first letter of a block, so it's a per-paragraph toggle */
+.surface p.dropcap::first-letter {
+  float: left; font-family: var(--serif); font-weight: 600; font-size: 4.6em; line-height: 0.82; padding: 0.06em 0.1em 0 0;
+}
+.piece .excerpt { -webkit-line-clamp: 1; }
+
+/* ---- layout sections, widths (shared by editor surface and published article) ---- */
+.surface, .article { --bleed-wide: 40px; --bleed-full: 72px; }
+.sec { display: grid; gap: var(--sec-gap, 24px); margin: 1.4em 0; grid-template-columns: minmax(0, 1fr); }
+.sec[data-gap="sm"] { --sec-gap: 12px; } .sec[data-gap="lg"] { --sec-gap: 44px; }
+.sec[data-layout="grid-2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sec[data-layout="grid-3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sec[data-layout="grid-side"] { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.sec[data-layout="flex"] { display: flex; flex-wrap: wrap; }
+.sec[data-layout="flex"] > .col { flex: 1 1 220px; }
+.sec[data-align="center"] { align-items: center; }
+.sec > .col { min-width: 0; }
+.sec > .col > :first-child { margin-top: 0; } .sec > .col > :last-child { margin-bottom: 0; }
+:is(.surface, .article) [data-width="wide"] { margin-inline: calc(var(--bleed-wide) * -1); max-width: none; }
+:is(.surface, .article) [data-width="full"] { margin-inline: calc(var(--bleed-full) * -1); max-width: none; }
+figure[data-width] img, .embed[data-width] iframe { width: 100%; }
+@media (max-width: 700px) {
+  .sec[data-layout="grid-2"], .sec[data-layout="grid-3"], .sec[data-layout="grid-side"] { grid-template-columns: minmax(0, 1fr); }
+  :is(.surface, .article) [data-width="wide"], :is(.surface, .article) [data-width="full"] { margin-inline: 0; }
+}
+/* editing chrome for sections */
+.surface .sec { outline: 1px dashed var(--line-2); outline-offset: 8px; padding: 0; border-radius: 4px; }
+.surface .sec > .col { outline: 1px dashed transparent; border-radius: 4px; min-height: 2.2em; }
+.surface .sec > .col:hover { outline-color: var(--line-2); }
+
+/* drag handle, block bar, drop line */
+.drag-handle {
+  position: absolute; z-index: 4; width: 24px; height: 28px; display: grid; place-items: center; padding: 0; touch-action: none;
+  border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink-3); cursor: grab;
+}
+.drag-handle:active { cursor: grabbing; }
+.fmt.blockbar { position: absolute; top: 0; margin: 0; z-index: 6; width: max-content; max-width: calc(100% - 8px); box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); }
+.blockbar button[aria-pressed="true"], .blockbar button.on { background: var(--line); }
+.blockbar button.txt { width: auto; padding: 0 9px; gap: 6px; display: inline-flex; font-size: 12px; font-weight: 500; }
+.drop-line { position: absolute; height: 3px; border-radius: 2px; background: #4a7fb5; pointer-events: none; z-index: 5; }
+.surface .dragging { opacity: 0.35; }
+.surface figure { cursor: pointer; }
+.surface figure.is-selected img { filter: brightness(0.92); }
+
+/* editor bar: preview toggle */
+.preview-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+/* drag handles: above a block, or on the side of a section; extra hit area keeps them reachable */
+.drag-handle::after { content: ""; position: absolute; inset: -8px; }
+.drag-handle.above { width: 36px; height: 18px; border-radius: 6px 6px 0 0; background: var(--surface); border: 1px solid var(--line-2); border-bottom: 0; }
+.drag-handle.side { width: 24px; height: 36px; background: var(--surface); border: 1px solid var(--line-2); }
+.drag-handle.side::after { inset: -8px -12px -8px -8px; }
+.drag-handle:hover { background: var(--line); color: var(--ink); }
+
+/* block bar: tooltips open below the bar so they never clip against the top of the editor */
+.blockbar [data-tip]:hover::after, .blockbar [data-tip]:focus-visible::after { bottom: auto; top: calc(100% + 8px); }
+.blockbar button { flex: none; }
+.blockbar svg { flex: none; }
+
+/* never let a stray image/figure widen a grid track */
+.sec > * { min-width: 0; }
+.surface img, .article img { max-width: 100%; height: auto; }
+.surface figure:not([data-width]), .col figure:not([data-width]) { max-width: 100%; min-width: 0; }
+.surface figure img, .article figure img { width: 100%; }
+.surface figure[data-width], .article figure[data-width], .embed[data-width] { max-width: none; width: auto; }
+
+/* link/image/embed popovers stay pinned under the sticky toolbar, so opening one never scrolls the page */
+/* square by default; rounded corners are opt-in from the media bar */
+:is(.surface, .article) figure[data-rounded] img, :is(.surface, .article) .embed[data-rounded] { border-radius: 14px; }
+.surface .embed-link[data-rounded] { border-radius: 14px; }
+
+/* second bold step: bold, then extra bold, then back to normal */
+:is(.surface, .a-body, .article) strong.x2 { font-weight: 900; -webkit-text-stroke: 0.03em currentColor; }

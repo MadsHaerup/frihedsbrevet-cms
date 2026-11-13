@@ -1,0 +1,2 @@
+/* Beats later single-class display rules so the hidden attribute still hides the element. */
+[hidden][hidden] { display: none; }

@@ -1,0 +1,56 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Logo from '../../components/Logo.astro';
+import { listUsers } from '../../lib/auth';
+import { LOCALES, isLang, switchLocalePath, url, useT } from '../../i18n';
+
+if (!isLang(Astro.params.lang)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang;
+if (Astro.locals.user) return Astro.redirect(url(lang, 'dashboard'));
+const t = useT(lang);
+const failed = Astro.url.searchParams.has('error');
+// Demo only: passwords follow the role (see src/data/users.json)
+const demo = (await listUsers()).map((u) => ({ ...u, pw: u.role === 'editor' ? 'editor123' : 'writer123' }));
+---
+<Layout title={t('login.signIn')} bare>
+  <main class="login">
+    <section class="left">
+      <div class="langs login-langs" role="group">
+        {LOCALES.map((l) => <a href={switchLocalePath(Astro.url.pathname, l)} aria-current={l === lang ? 'true' : undefined} hreflang={l}>{l.toUpperCase()}</a>)}
+      </div>
+      <div class="box">
+        <Logo size={34} class="login-logo" />
+        <div><h1>{t('login.welcome')}</h1><p class="muted" style="margin:6px 0 0">{t('login.sub')}</p></div>
+        {failed && <div class="notice">{t('login.wrong')}</div>}
+        <form method="post" action="/api/login" id="login">
+          <input type="email" name="email" placeholder={t('login.email')} required autocomplete="username" />
+          <input type="password" name="password" placeholder={t('login.passLabel')} required autocomplete="current-password" />
+          <button class="btn primary">{t('login.signIn')}</button>
+        </form>
+        <div class="demo">
+          <span class="faint" style="font-size:12px">{t('login.demo')}</span>
+          {demo.map((d) => (
+            <button type="button" class="btn" data-email={d.email} data-pw={d.pw}>{d.name}<span class="faint">{t(`role.${d.role}`)}</span></button>
+          ))}
+        </div>
+      </div>
+    </section>
+    <section class="right"><img src="/team.webp" alt="" /></section>
+  </main>
+  <script>
+    // bind now (first load) and again on every client-routed arrival; the data flag stops double binding
+    const bind = () =>
+      document.querySelectorAll<HTMLButtonElement>('[data-email]').forEach((b) => {
+        if (b.dataset.bound) return;
+        b.dataset.bound = '1';
+        b.addEventListener('click', () => {
+          const f = document.getElementById('login') as HTMLFormElement;
+          (f.elements.namedItem('email') as HTMLInputElement).value = b.dataset.email!;
+          (f.elements.namedItem('password') as HTMLInputElement).value = b.dataset.pw!;
+          f.requestSubmit();
+        });
+      });
+    bind();
+    document.addEventListener('astro:page-load', bind);
+  </script>
+</Layout>

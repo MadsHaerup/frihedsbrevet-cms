@@ -1,0 +1,15 @@
+/* page transitions + dialog motion */
+.page { display: contents; }
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(cover-*) { animation-duration: 0.28s; animation-timing-function: cubic-bezier(0.2, 0, 0, 1); }
+  dialog.editor-dialog[open] { animation: dlg-in 0.2s cubic-bezier(0.2, 0, 0, 1); }
+  dialog.editor-dialog[open]::backdrop { animation: dlg-fade 0.2s ease-out; }
+  .list .piece { animation: row-in 0.22s ease-out both; }
+  .spinner { animation: spin 0.7s linear infinite; }
+  .toast { animation: dlg-fade 0.15s ease-out; }
+  .file-btn.is-busy::before { animation: spin 0.7s linear infinite; }
+  .preview.is-loading::before { animation: bar 0.9s ease-in-out infinite; }
+}
+@keyframes dlg-in { from { opacity: 0; transform: translateY(10px) scale(0.985); } }
+@keyframes dlg-fade { from { opacity: 0; } }
+@keyframes row-in { from { opacity: 0; transform: translateY(4px); } }

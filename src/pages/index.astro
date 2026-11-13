@@ -1,0 +1,4 @@
+---
+import { url } from '../i18n';
+return Astro.redirect(url(Astro.locals.lang, Astro.locals.user ? 'dashboard' : 'login'));
+---
