@@ -1,0 +1,10 @@
+[build]
+  # NETLIFY=true is already set on Netlify CI; set explicitly so `netlify deploy` from a laptop builds with the Netlify adapter too
+  command = "NETLIFY=true npm run build"
+
+# The repo's content/ folder seeds Netlify Blobs the first time a collection is read.
+[functions]
+  included_files = ["content/**"]
+
+[build.environment]
+  NODE_VERSION = "22"
