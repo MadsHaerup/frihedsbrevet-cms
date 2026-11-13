@@ -1,0 +1,173 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Dropdown from '../../components/Dropdown.astro';
+import Icon from '../../components/Icon.astro';
+import Editor from '../../components/Editor.astro';
+import { listUsers } from '../../lib/auth';
+import { ago, excerpt, fallbackCover, fmtDate, headerImage, thumbUrl, initials, isOverdue } from '../../lib/format';
+import { isLang, statusLabel, typeLabel, useT } from '../../i18n';
+import { listItems } from '../../lib/content/items';
+import { STATUSES, TYPES } from '../../lib/model';
+
+if (!isLang(Astro.params.lang)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang;
+const t = useT(lang);
+const me = Astro.locals.user!;
+const users = await listUsers();
+const name = (id: string) => users.find((u) => u.id === id)?.name ?? id;
+const all = await listItems(me);
+
+const q = Astro.url.searchParams;
+const status = q.get('status') ?? 'All';
+const type = q.get('type') ?? '';
+const search = (q.get('q') ?? '').toLowerCase();
+const error = q.get('error');
+const opening = q.get('open');
+
+const active = all.filter((i) => !i.data.archived);
+const archived = all.filter((i) => i.data.archived);
+const pool = status === 'Archived' ? archived : active;
+const filtered = pool.filter((i) => {
+  const hay = `${i.data.title}\n${i.data.body}`.toLowerCase();
+  return (status === 'All' || status === 'Archived' || i.data.status === status) && (!type || i.data.type === type) && (!search || hay.includes(search));
+});
+// Sortable columns: ?sort=published|status&dir=asc|desc (unpublished pieces always sink to the bottom when sorting by date)
+const sortKey = ['published', 'status'].includes(q.get('sort') ?? '') ? (q.get('sort') as 'published' | 'status') : '';
+const dir = q.get('dir') === 'desc' ? 'desc' : 'asc';
+const sign = dir === 'asc' ? 1 : -1;
+const shown = !sortKey
+  ? filtered
+  : [...filtered].sort((a, b) => {
+      if (sortKey === 'status') return (STATUSES.indexOf(a.data.status) - STATUSES.indexOf(b.data.status)) * sign || b.data.updatedAt.localeCompare(a.data.updatedAt);
+      const pa = a.data.status === 'Published' ? a.data.publishedAt : undefined;
+      const pb = b.data.status === 'Published' ? b.data.publishedAt : undefined;
+      if (!pa && !pb) return 0;
+      if (!pa) return 1;
+      if (!pb) return -1;
+      return pa.localeCompare(pb) * sign;
+    });
+const sortHref = (key: 'published' | 'status') => {
+  const u = new URLSearchParams(q);
+  u.delete('error');
+  u.delete('open');
+  // none -> ascending -> descending -> none
+  if (sortKey !== key) { u.set('sort', key); u.set('dir', 'asc'); }
+  else if (dir === 'asc') { u.set('dir', 'desc'); }
+  else { u.delete('sort'); u.delete('dir'); }
+  const qs = u.toString();
+  return qs ? `?${qs}` : '?';
+};
+const ariaSort = (key: string) => (sortKey === key ? (dir === 'asc' ? 'ascending' : 'descending') : 'none');
+const count = (s: string) => active.filter((i) => i.data.status === s).length;
+const tabs = [
+  { key: 'All', n: active.length },
+  ...STATUSES.map((s) => ({ key: s, n: count(s) })),
+  { key: 'Archived', n: archived.length },
+];
+const href = (s: string) => {
+  const u = new URLSearchParams(q);
+  u.delete('error');
+  u.delete('open');
+  s === 'All' ? u.delete('status') : u.set('status', s);
+  const qs = u.toString();
+  return qs ? `?${qs}` : '?';
+};
+const back = new URL(Astro.url);
+back.searchParams.delete('error');
+back.searchParams.delete('open');
+const next = back.pathname + back.search;
+const typeOptions = [{ value: '', label: t('dash.allTypes') }, ...TYPES.map((x) => ({ value: x, label: typeLabel(lang, x) }))];
+const statusOptions = STATUSES.map((s) => ({ value: s, label: statusLabel(lang, s) }));
+const tabLabel = (k: string) => (k === 'All' ? t('tab.All') : k === 'Archived' ? t('tab.Archived') : statusLabel(lang, k));
+---
+<Layout title={t('nav.content')}>
+  <main class="wrap">
+    <div class="page-head">
+      <div>
+        <h1>{me.role === 'editor' ? t('dash.all') : t('dash.yours')}</h1>
+        <p class="muted">{me.role === 'editor' ? t('dash.allSub') : t('dash.yoursSub')}</p>
+      </div>
+      <button class="btn primary" id="open-new" type="button">{t('dash.new')}</button>
+    </div>
+
+    {error && !opening && <div class="notice">{error}</div>}
+
+    <div class="topbar">
+      <form class="search" method="get">
+        {status !== 'All' && <input type="hidden" name="status" value={status} />}
+      {sortKey && <input type="hidden" name="sort" value={sortKey} />}
+      {sortKey && <input type="hidden" name="dir" value={dir} />}
+        <label class="search-field">
+          <span class="sr">{t('dash.search')}</span>
+          <Icon name="search" size={15} />
+          <input type="search" name="q" placeholder={t('dash.search')} value={q.get('q') ?? ''} />
+        </label>
+        <Dropdown name="type" value={type} options={typeOptions} variant="filter" submit label={t('ed.type')} />
+      </form>
+      <nav class="tabs">
+        {tabs.map((tab) => <a href={href(tab.key)} data-keep-scroll data-astro-prefetch aria-current={status === tab.key ? 'page' : undefined}>{tabLabel(tab.key)}<span>{tab.n}</span></a>)}
+      </nav>
+    </div>
+
+    <div class="list-meta"><span class="faint">{shown.length} {shown.length === 1 ? t('dash.piece') : t('dash.pieces')}</span></div>
+
+    <div class="list">
+      <div class="piece head">
+        <div class="piece-main"><span></span><span>{t('dash.colPiece')}</span></div>
+        <span>{t('dash.colWorking')}</span>
+        <a class:list={['th-sort', { on: sortKey === 'published' }]} data-keep-scroll data-astro-history="replace" data-astro-prefetch href={sortHref('published')} aria-sort={ariaSort('published')}>{t('dash.colPublished')}<i class={`arr ${sortKey === 'published' ? dir : ''}`} aria-hidden="true"></i></a>
+        <a class:list={['th-sort', { on: sortKey === 'status' }]} data-keep-scroll data-astro-history="replace" data-astro-prefetch href={sortHref('status')} aria-sort={ariaSort('status')}>{t('dash.colMode')}<i class={`arr ${sortKey === 'status' ? dir : ''}`} aria-hidden="true"></i></a>
+      </div>
+      {shown.length === 0 && <div class="empty">{t('dash.nothing')}</div>}
+      {shown.map(({ id, data: d }) => (
+        <article class="piece">
+          <button type="button" class="piece-main" data-open={id} aria-label={d.title}>
+            <span class="thumb" transition:name={`cover-${id}`} style={headerImage(d) ? undefined : `background-image:${fallbackCover(id)}`}>
+              {headerImage(d) && <img src={thumbUrl(headerImage(d)!)} alt="" />}
+            </span>
+            <span class="piece-copy">
+              <span class="kicker">{d.section || typeLabel(lang, d.type)}</span>
+              <span class="title">{d.title}</span>
+              <span class="excerpt">{excerpt(d.body, 140) || t('dash.noNotes')}</span>
+            </span>
+          </button>
+          <div class="working">
+            <span class="avatars">
+              {d.authors.slice(0, 3).map((a) => <span class="avatar" title={name(a)}>{initials(name(a))}</span>)}
+            </span>
+            <span class="working-names">{d.authors.map(name).join(', ')}</span>
+          </div>
+          <div class="when">
+            {d.status === 'Published' && d.publishedAt ? (
+              <>
+                <span>{fmtDate(d.publishedAt.slice(0, 10), lang)}</span>
+                <span class="sub">{ago(d.publishedAt, lang)}</span>
+              </>
+            ) : isOverdue(d) ? (
+              <>
+                <span class="late">{t('dash.overdue')}</span>
+                <span class="sub late">{t('dash.due')} {fmtDate(d.deadline, lang)}</span>
+              </>
+            ) : (
+              <>
+                <span class="faint">{t('dash.notPublished')}</span>
+                <span class="sub">{t('dash.edited')} {ago(d.updatedAt, lang)}</span>
+              </>
+            )}
+          </div>
+          {d.archived ? <span class="mode-pill">{t('dash.archived')}</span> : (
+            <form method="post" action={`/api/items/${id}`}>
+              <input type="hidden" name="intent" value="status" />
+              <input type="hidden" name="next" value={next} />
+              <Dropdown name="status" value={d.status} options={statusOptions.map((o) => ({ ...o, disabled: d.status === 'Published' ? o.value !== 'Published' : o.value === 'Published' }))} variant="mode" swatch submit label={t('ed.mode')} />
+            </form>
+          )}
+        </article>
+      ))}
+    </div>
+  </main>
+
+  <dialog id="editor-dialog" class="editor-dialog" aria-label="Editor">
+    <Editor mode="modal" users={users} me={me} />
+  </dialog>
+</Layout>
