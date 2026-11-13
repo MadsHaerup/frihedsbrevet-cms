@@ -1,0 +1,52 @@
+---
+import PublicLayout from '../../../layouts/PublicLayout.astro';
+import ArticleView from '../../../components/ArticleView.astro';
+import { listUsers } from '../../../lib/auth';
+import { getPublished } from '../../../lib/content/items';
+import { renderMarkdown } from '../../../lib/content/loader';
+import { popularFor, teaserMarkdown } from '../../../lib/article';
+import { excerpt } from '../../../lib/format';
+import { isLang } from '../../../i18n';
+
+if (!isLang(Astro.params.lang)) return new Response(null, { status: 404 });
+const lang = Astro.locals.lang;
+const id = Astro.params.id!;
+const entry = await getPublished(id);
+if (!entry) return new Response('Not found', { status: 404 });
+const d = entry.data;
+
+// Signed-in staff read the whole piece; everyone else gets the opening and the membership box.
+const viewer = Astro.locals.user;
+const mode = viewer ? 'member' : 'visitor';
+const users = await listUsers();
+const html = await renderMarkdown(mode === 'visitor' ? teaserMarkdown(d.body) : d.body);
+const popular = await popularFor(id, lang);
+
+if (viewer) {
+  Astro.response.headers.set('Cache-Control', 'private, no-store');
+} else {
+  // Netlify CDN: cache until purged (publish/update/archive purge the article tag), varying on the session cookie.
+  Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  Astro.response.headers.set('Netlify-CDN-Cache-Control', 'public, s-maxage=31536000, must-revalidate, durable');
+  Astro.response.headers.set('Netlify-Cache-Tag', `article-${id},articles`);
+  Astro.response.headers.set('Netlify-Vary', 'cookie=fb_session');
+}
+---
+<PublicLayout title={d.title} description={excerpt(d.body, 160)} image={d.cover}>
+  <div class="paper">
+    <ArticleView
+      lang={lang}
+      title={d.title}
+      section={d.section || ''}
+      type={d.type}
+      cover={d.cover}
+      caption={(d as any).caption}
+      authors={d.authors.map((a) => users.find((u) => u.id === a)?.name ?? a)}
+      publishedAt={d.publishedAt}
+      html={html}
+      popular={popular}
+      mode={mode}
+      viewerName={viewer?.name}
+    />
+  </div>
+</PublicLayout>

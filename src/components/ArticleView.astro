@@ -1,0 +1,129 @@
+---
+/**
+ * The article as readers see it: site header, headline + hero, body, membership box, popular sidebar.
+ * Rendered for the public page and (through the Astro container) for the editor's "preview as published".
+ * Nothing in here is stored in the piece.
+ */
+import { DATE_LOCALE, url, useT, type Lang } from '../i18n';
+import Icon from './Icon.astro';
+import Logo from './Logo.astro';
+
+interface Popular { id: string; title: string; kicker: string; image: string }
+interface Props {
+  lang: Lang;
+  title: string;
+  section: string;
+  type: string;
+  cover?: string;
+  caption?: string;
+  authors: string[];
+  publishedAt?: string;
+  /** sanitised body HTML (already cut to the teaser for visitors) */
+  html: string;
+  popular: Popular[];
+  mode: 'member' | 'visitor';
+  /** editor preview: adds the banner with the member/visitor switch */
+  preview?: boolean;
+  live?: boolean;
+  viewerName?: string;
+}
+const { lang, title, section, type, cover, caption, authors, publishedAt, html, popular, mode, preview = false, live = false, viewerName = '' } = Astro.props;
+const t = useT(lang);
+const visitor = mode === 'visitor';
+const initials = (n: string) => n.split(' ').map((p) => p[0]).join('').slice(0, 2);
+const when = (publishedAt ? new Date(publishedAt) : new Date()).toLocaleString(DATE_LOCALE[lang], { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Copenhagen' });
+---
+{preview && (
+  <div class="pv-banner">
+    <span>{live ? t('pv.live') : t('pv.notLive')}</span>
+    <div class="pv-toggle" role="group" aria-label={t('pv.viewAs')}>
+      <span>{t('pv.viewAs')}</span>
+      <button type="button" data-pv-mode="member" aria-pressed={!visitor ? 'true' : 'false'}>{t('pv.mode.member')}</button>
+      <button type="button" data-pv-mode="visitor" aria-pressed={visitor ? 'true' : 'false'}>{t('pv.mode.visitor')}</button>
+    </div>
+  </div>
+)}
+<header class="site-head">
+  <Logo size={30} />
+  <nav><b>{t('pv.nav.articles')}</b><span>{t('pv.nav.podcasts')}</span><span>{t('pv.nav.search')}</span><span>{t('pv.nav.shop')}</span></nav>
+  {visitor
+    ? <div class="site-cta"><span>{t('pv.login')}</span><em>{t('pv.join')}</em></div>
+    : <div class="site-cta"><span class="site-me"><i>{initials(viewerName || 'M')}</i>{t('pv.account')}</span></div>}
+</header>
+<article class="article">
+  <p class="a-date">{when}</p>
+  <div class="a-head">
+    <div class="a-text">
+      <div class="a-kicker">
+        <Logo size={20} />
+        <span>{section}</span>
+      </div>
+      <h1 class="a-title" data-size={title.length > 70 ? 'long' : title.length > 40 ? 'mid' : 'short'}>{title}</h1>
+      <p class="a-by">{t('pv.by')}</p>
+      <div class="a-authors">
+        {authors.map((n) => <span class="a-author"><i>{initials(n)}</i><b>{n}</b></span>)}
+      </div>
+    </div>
+    {cover && (
+      <figure class="a-hero">
+        <img src={cover} alt="" />
+        {caption && <figcaption>{caption}</figcaption>}
+      </figure>
+    )}
+  </div>
+  <div class="a-layout">
+    <div class="a-main">
+      <div class:list={['a-body', { 'is-teaser': visitor }]} set:html={html} />
+      {visitor && <p class="a-paywall">{t('pv.paywall')}</p>}
+      {visitor && type === 'Article' && (
+        <div class="a-cta">
+          <h2>{t('pv.cta.title')} <span>{t('pv.cta.accent')}</span></h2>
+          <hr />
+          <p>{t('pv.cta.text')}</p>
+          <span class="a-cta-btn">{t('pv.cta.button')}</span>
+          <p class="a-cta-member"><b>{t('pv.cta.member')}</b> <span>{t('pv.cta.login')}</span></p>
+        </div>
+      )}
+    </div>
+    <aside class="a-aside">
+      <h2>{t('pv.popular')}</h2>
+      <div class="a-pop">
+        {popular.map((p) => (
+          <a class="a-pop-item" href={url(lang, `artikler/${p.id}`)} target={preview ? '_blank' : undefined} rel="noopener">
+            <div><small>{p.kicker}</small><strong>{p.title}</strong></div>
+            {p.image && <img src={p.image} alt="" />}
+          </a>
+        ))}
+      </div>
+    </aside>
+  </div>
+</article>
+<footer class="site-foot">
+  <div class="sf-wrap">
+    <div class="sf-news">
+      <h2>{t('pv.f.newsletter')}</h2>
+      <div class="sf-form"><span class="sf-input">{t('pv.f.email')}</span><span class="sf-btn">{t('pv.f.subscribe')}</span></div>
+    </div>
+    <hr />
+    <div class="sf-brand">
+      <Logo size={54} />
+      <span>{t('pv.f.tagline')}</span>
+    </div>
+    <p class="sf-copy">© Copyright<br />Mediehuset Friheden, {new Date().getFullYear()}</p>
+    <hr />
+    <div class="sf-cols">
+      <div><h3>{t('pv.f.about')}</h3><a>{t('pv.f.about1')}</a><a>{t('pv.f.about2')}</a><span class="sf-press">PRESSE<br />NÆVNET</span></div>
+      <div><h3>{t('pv.f.membership')}</h3><a>{t('pv.f.m1')}</a><a>{t('pv.f.m2')}</a><a>{t('pv.f.m3')}</a><a>{t('pv.f.m4')}</a><a>{t('pv.f.m5')}</a><a>{t('pv.f.m6')}</a></div>
+      <div><h3>{t('pv.f.contact')}</h3><a>{t('pv.f.c1')}</a><a>{t('pv.f.c2')}</a><a>{t('pv.f.c3')}</a></div>
+      <div>
+        <h3>{t('pv.f.follow')}</h3>
+        <div class="sf-social" aria-hidden="true">
+          <Icon name="facebook" size={28} />
+          <Icon name="x" size={28} />
+          <Icon name="instagram" size={28} />
+          <Icon name="linkedin" size={28} />
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
