@@ -1,0 +1,54 @@
+---
+import Icon from '../Icon.astro';
+import type { ContentItem } from '../../lib/model';
+import { collLabel, url, useT } from '../../i18n';
+
+interface Props {
+  mode: 'modal' | 'page';
+  id?: string;
+  item?: ContentItem;
+  hero?: string;
+  live: boolean;
+  locked: boolean;
+}
+const { mode, id, item, hero, live, locked } = Astro.props;
+const lang = Astro.locals.lang;
+const t = useT(lang);
+const type = item?.type ?? 'Article';
+---
+  <header class="editor-bar">
+    <div class="editor-id">
+      {mode === 'modal' && (
+        <button type="button" class="icon-btn" data-close aria-label={t('ed.close')}>
+          <Icon name="close" />
+        </button>
+      )}
+      <span class="editor-mark" data-editor-mark>
+        {hero && <img src={hero} alt="" />}
+      </span>
+      <div class="editor-crumb">
+        {mode === 'page' ? <a href={url(lang, 'dashboard')}>{t('nav.content')}</a> : <span>{t('nav.content')}</span>}
+        <span class="sep">/</span>
+        <span data-collection>{collLabel(lang, type)}</span>
+        <span class="sep">/</span>
+        <span class="now" data-crumb>{item?.title || t('ed.untitled')}</span>
+      </div>
+    </div>
+    <div class="editor-actions">
+      <button type="button" class="btn preview-btn" data-preview-toggle aria-pressed="false">
+        <Icon name="preview" />
+        <span data-preview-label>{t('ed.preview')}</span>
+      </button>
+      <a class="icon-btn" data-open-page href={id ? url(lang, `content/${id}`) : url(lang, 'dashboard')} hidden={mode !== 'modal' || !id} aria-label={t('ed.fullscreen')} title={t('ed.fullscreen')}>
+        <Icon name="fullscreen" />
+      </a>
+      <a class="btn" data-live-link href={id ? url(lang, `artikler/${id}`) : '#'} target="_blank" rel="noopener" hidden={!live || locked}>
+        <Icon name="external" size={14} />
+        {t('ed.viewLive')}
+      </a>
+      <button class="btn" name="intent" value="restore" formnovalidate data-restore hidden={!locked}>{t('ed.restore')}</button>
+      <button class="btn" name="intent" value="save" data-save hidden={locked || live}>{t('ed.saveDraft')}</button>
+      <button class="btn primary" name="intent" value="publish" data-publish hidden={locked || live}>{t('ed.publish')}</button>
+      <button class="btn primary" name="intent" value="update" data-update hidden={locked || !live}>{t('ed.update')}</button>
+    </div>
+  </header>

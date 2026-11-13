@@ -1,0 +1,73 @@
+---
+import Dropdown from '../Dropdown.astro';
+import type { SessionUser } from '../../lib/auth';
+import { initials } from '../../lib/format';
+import { SECTIONS, STATUSES, TYPES, type ContentItem } from '../../lib/model';
+import { statusLabel, typeLabel, useT } from '../../i18n';
+
+interface Props {
+  users: SessionUser[];
+  item?: ContentItem;
+  id?: string;
+  authors: string[];
+  live: boolean;
+  locked: boolean;
+}
+const { users, item, id, authors, live, locked } = Astro.props;
+const lang = Astro.locals.lang;
+const t = useT(lang);
+const status = item?.status ?? 'Idea';
+const type = item?.type ?? 'Article';
+// Once live, a piece can't go back to draft; and publishing happens through the Publish button, not this menu.
+const statusOptions = STATUSES.map((s) => ({ value: s, label: statusLabel(lang, s), disabled: live ? s !== 'Published' : s === 'Published' }));
+const sectionOptions = [{ value: '', label: t('ed.noSection') }, ...SECTIONS.map((x) => ({ value: x, label: x }))];
+const typeOptions = TYPES.map((x) => ({ value: x, label: typeLabel(lang, x) }));
+---
+    <aside class="editor-side">
+      <fieldset disabled={locked}>
+        <div class="side-card">
+          <div class="field">
+            <span class="side-label">{t('ed.cover')}</span>
+            <div class="cover-row">
+              <input name="cover" data-cover value={item?.cover ?? ''} placeholder={t('ed.coverPh')} autocomplete="off" />
+              <label class="btn file-btn">{t('ed.upload')}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" data-cover-upload hidden /></label>
+            </div>
+            <input name="caption" value={item?.caption ?? ''} placeholder={t('ed.captionPh')} aria-label={t('ed.caption')} autocomplete="off" />
+          </div>
+        </div>
+        <div class="side-card">
+          <div class="side-label">{t('ed.working')}</div>
+          <div class="people">
+            {users.map((u) => (
+              <label class="person">
+                <input type="checkbox" name="authors" value={u.id} data-name={u.name} checked={authors.includes(u.id)} />
+                <span class="avatar">{initials(u.name)}</span>
+                <span>{u.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div class="side-card">
+          <div class="field">
+            <span class="side-label">{t('ed.mode')}</span>
+            <Dropdown name="status" value={status} options={statusOptions} variant="field" swatch label={t('ed.mode')} />
+          </div>
+          <div class="field">
+            <span class="side-label">{t('ed.type')}</span>
+            <Dropdown name="type" value={type} options={typeOptions} variant="field" label={t('ed.type')} />
+          </div>
+          <div class="field">
+            <span class="side-label">{t('ed.section')}</span>
+            <Dropdown name="section" value={item?.section ?? ''} options={sectionOptions} variant="field" label={t('ed.section')} />
+          </div>
+          <div class="field">
+            <span class="side-label">{t('ed.deadline')}</span>
+            <input type="date" name="deadline" required value={item?.deadline ?? ''} />
+          </div>
+        </div>
+      </fieldset>
+      <div class="archive-row">
+        <button type="submit" class="btn link danger" name="intent" value="archive" formnovalidate data-archive hidden={!id || locked}>{t('ed.archive')}</button>
+        <button type="submit" class="btn link danger" name="intent" value="delete" formnovalidate data-delete data-confirm={t('ed.deleteConfirm')} hidden={!id}>{t('ed.delete')}</button>
+      </div>
+    </aside>

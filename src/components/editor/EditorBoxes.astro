@@ -1,0 +1,23 @@
+---
+import { useT } from '../../i18n';
+const t = useT(Astro.locals.lang);
+---
+<div class="linkbox" data-box="link" hidden>
+  <input type="url" placeholder="https://" aria-label="URL" />
+  <button type="button" class="btn" data-box-apply>{t('ed.apply')}</button>
+  <button type="button" class="btn link" data-box-cancel>{t('ed.cancel')}</button>
+</div>
+<div class="linkbox imagebox" data-box="image" hidden>
+  <input type="url" name="_src" placeholder={t('ins.imageUrl')} aria-label={t('ins.imageUrl')} />
+  <label class="btn file-btn">{t('ins.chooseFile')}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" data-upload hidden /></label>
+  <input type="text" name="_alt" placeholder={t('ins.alt')} aria-label={t('ins.alt')} />
+  <input type="text" name="_caption" placeholder={t('ins.caption')} aria-label={t('ins.caption')} />
+  <button type="button" class="btn primary" data-box-apply>{t('ins.insert')}</button>
+  <button type="button" class="btn link" data-box-cancel>{t('ed.cancel')}</button>
+  <span class="box-status faint" data-box-status></span>
+</div>
+<div class="linkbox" data-box="embed" hidden>
+  <input type="url" placeholder={t('ins.embedUrl')} aria-label={t('ins.embedUrl')} />
+  <button type="button" class="btn primary" data-box-apply>{t('ins.insert')}</button>
+  <button type="button" class="btn link" data-box-cancel>{t('ed.cancel')}</button>
+</div>

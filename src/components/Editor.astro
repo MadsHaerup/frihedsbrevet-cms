@@ -1,0 +1,84 @@
+---
+import Icon from './Icon.astro';
+import EditorBar from './editor/EditorBar.astro';
+import EditorBoxes from './editor/EditorBoxes.astro';
+import EditorSidebar from './editor/EditorSidebar.astro';
+import EditorToolbar from './editor/EditorToolbar.astro';
+import type { SessionUser } from '../lib/auth';
+import { headerImage } from '../lib/format';
+import type { ContentItem } from '../lib/model';
+import { useT } from '../i18n';
+
+interface Props {
+  users: SessionUser[];
+  me: SessionUser;
+  mode: 'modal' | 'page';
+  id?: string;
+  item?: ContentItem;
+  html?: string;
+  error?: string;
+}
+const { users, me, mode, id, item, html = '', error } = Astro.props;
+const lang = Astro.locals.lang;
+const t = useT(lang);
+const locked = !!item?.archived;
+const live = item?.status === 'Published';
+const hero = item ? headerImage(item) : undefined;
+const authors = item?.authors ?? [me.id];
+const byline = authors.map((a) => users.find((u) => u.id === a)?.name ?? a).join(', ');
+---
+<form
+  class="editor"
+  method="post"
+  action={id ? `/api/items/${id}` : '/api/items'}
+  data-editor
+  data-mode={mode}
+  data-me={me.id}
+  data-me-name={me.name}
+  data-published={item?.publishedAt ?? ''}
+  data-locked={locked ? 'true' : 'false'}
+  data-live={live ? 'true' : 'false'}
+  data-editing={id ? 'true' : 'false'}
+>
+  <EditorBar mode={mode} id={id} item={item} hero={hero} live={live} locked={locked} />
+
+  <div class="banner editor-banner" data-locked-banner hidden={!locked}>{t('ed.archivedBanner')}</div>
+  <div class="notice editor-notice" data-editor-error hidden={!error}>{error}</div>
+
+  <div class="editor-body">
+    <div class="editor-main">
+      <fieldset disabled={locked}>
+        <div class="editor-copy">
+          <button type="button" class="drag-handle above" data-handle draggable="true" hidden aria-label={t('blk.drag')} title={t('blk.drag')}>
+            <Icon name="grip" size={14} />
+          </button>
+          <button type="button" class="drag-handle side" data-handle-sec draggable="true" hidden aria-label={t('blk.drag')} title={t('blk.drag')}>
+            <Icon name="grip-side" size={14} />
+          </button>
+          <div class="blockbar fmt" data-blockbar hidden role="toolbar"></div>
+          <figure class="hero" data-hero hidden={!hero} transition:name={id ? `cover-${id}` : undefined}>{hero && <img src={hero} alt="" />}</figure>
+          <textarea class="editor-title" name="title" required maxlength="160" rows="1" placeholder={t('ed.untitled')} aria-label={t('ed.title')} autocomplete="off">{item?.title ?? ''}</textarea>
+          <p class="editor-byline" data-byline>{byline || t('ed.noOne')}</p>
+          <EditorToolbar />
+          <EditorBoxes />
+          <div
+            class:list={['surface', html ? '' : 'is-empty']}
+            contenteditable={locked ? 'false' : 'true'}
+            role="textbox"
+            aria-multiline="true"
+            aria-label={t('ed.body')}
+            data-placeholder={t('ed.start')}
+            set:html={html || undefined}
+          ></div>
+        </div>
+      </fieldset>
+    </div>
+
+    <EditorSidebar users={users} item={item} id={id} authors={authors} live={live} locked={locked} />
+  </div>
+
+  <section class="preview" data-preview hidden aria-live="polite"></section>
+
+  <textarea name="body" hidden>{item?.body ?? ''}</textarea>
+  <input type="hidden" name="next" value="" data-next disabled />
+</form>

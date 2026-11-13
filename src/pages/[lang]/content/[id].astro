@@ -1,0 +1,20 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import Editor from '../../../components/Editor.astro';
+import { listUsers } from '../../../lib/auth';
+import { isLang } from '../../../i18n';
+import { getItem } from '../../../lib/content/items';
+
+if (!isLang(Astro.params.lang)) return new Response(null, { status: 404 });
+const me = Astro.locals.user!;
+const entry = await getItem(me, Astro.params.id!);
+if (!entry) return new Response('Not found', { status: 404 });
+const { id, data, rendered } = entry;
+const users = await listUsers();
+const error = Astro.url.searchParams.get('error');
+---
+<Layout title={data.title}>
+  <main class="editor-page">
+    <Editor mode="page" id={id} item={data} html={rendered?.html ?? ''} users={users} me={me} error={error ?? undefined} />
+  </main>
+</Layout>
